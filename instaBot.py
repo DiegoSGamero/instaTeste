@@ -1,105 +1,95 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service
 import time
 import random
-
-# Fiz algumas modificações
-
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 class InstagramBot:
     def __init__(self, username, password):
         self.username = username
         self.password = password
-        firefoxProfile = webdriver.FirefoxProfile()
-        firefoxProfile.set_preference("intl.accept_languages", "pt,pt-BR")
-        firefoxProfile.set_preference("dom.webnotifications.enabled", False)
-        self.driver = webdriver.Firefox(
-            firefox_profile=firefoxProfile, executable_path=r"./geckodriver"
-        )
-        """ # Coloque o caminho para o seu geckodriver aqui, lembrando que você precisa instalar o firefox e geckodriver na versão mais atual """
-        # Link download do geckodriver: https://github.com/mozilla/geckodriver/releases
-        # Link download Firefox https://www.mozilla.org/pt-BR/firefox/new/
+
+        # Configurações para o Chrome
+        print("Configurando o Chrome...")
+        service = Service("C:/chromedriver-win64/chromedriver.exe")
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument("--lang=pt-BR")  # Define o idioma para português
+        chrome_options.add_argument("--disable-notifications")  # Desativa notificações
+        print("Inicializando o WebDriver...")
+        self.driver = webdriver.Chrome(service=service, options=chrome_options)
+
 
     def login(self):
         driver = self.driver
         driver.get("https://www.instagram.com")
         time.sleep(3)
-        login_button = driver.find_element_by_xpath(
-            "//a[@href='/accounts/login/?source=auth_switcher']"
-        )
-        login_button.click()
-        time.sleep(3)
-        user_element = driver.find_element_by_xpath(
-            "//input[@name='username']")
+
+        # login_button = driver.find_element("xpath", "//a[@href='/accounts/login/?source=auth_switcher']")
+        # login_button.click()
+        # time.sleep(3)
+
+        user_element = driver.find_element("xpath", "//input[@name='username']")
         user_element.clear()
         user_element.send_keys(self.username)
-        time.sleep(3)
-        password_element = driver.find_element_by_xpath(
-            "//input[@name='password']")
+        time.sleep(1)
+
+        password_element = driver.find_element("xpath", "//input[@name='password']")
         password_element.clear()
+        time.sleep(2)
         password_element.send_keys(self.password)
         time.sleep(3)
         password_element.send_keys(Keys.RETURN)
-        time.sleep(5)
-        self.comente_nas_fotos_com_a_hashtag(
-            "calisteniabrasil"
-        )  # Altere aqui para a hashtag que você deseja usar.
+        time.sleep(6)
+
+        # self.comente_nas_fotos_com_a_hashtag("calisteniabrasil")  # Altere para sua hashtag
+        # Chame o método para comentar em uma página específica
+        self.comente_na_pagina("https://www.instagram.com/guarulhoshoje/reel/DD0KJP_J1IN/")
 
     @staticmethod
     def type_like_a_person(sentence, single_input_field):
-        """ Este código irá basicamente permitir que você simule a digitação como uma pessoa """
-        print("going to start typing message into message share text area")
+        """ Simula a digitação como uma pessoa """
         for letter in sentence:
             single_input_field.send_keys(letter)
             time.sleep(random.randint(1, 5) / 30)
 
-    def comente_nas_fotos_com_a_hashtag(self, hashtag):
-        links_de_posts = []
+    def comente_na_pagina(self, url):
         driver = self.driver
-        driver.get("https://www.instagram.com/explore/tags/" + hashtag + "/")
-        time.sleep(5)
-        for i in range(
-            1, 3
-        ):  # Altere o segundo valor aqui para que ele desça a quantidade de páginas que você quiser: quer que ele desça 5 páginas então você deve alterar de range(1,3) para range(1,5)
-            driver.execute_script(
-                "window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(3)
-        hrefs = driver.find_elements_by_tag_name("a")
-        pic_hrefs = [elem.get_attribute("href") for elem in hrefs]
-        print(hashtag + " fotos: " + str(len(pic_hrefs)))
-        for link in pic_hrefs:
-            try:
-                if link.index("/p/") != -1:
-                    links_de_posts.append(link)
-            except:
-                pass
+        driver.get(url)  # Acessa a URL da postagem específica
+        time.sleep(3)
+        # Scroll até o final da página
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(3)
+        # Voltar ao topo da página
+        driver.execute_script("window.scrollTo(0, 0);")
+        time.sleep(3)
 
-        for pic_href in links_de_posts:
-            driver.get(pic_href)
-            driver.execute_script(
-                "window.scrollTo(0, document.body.scrollHeight);")
-            try:
-                comments = [
-                    "Olha que foto massa!",
-                    "Olha que foto massa!",
-                    "Olha que foto massa!",
-                    "Olha que foto massa!",
-                ]  # Remova esses comentários e insira os seus comentários aqui
-                driver.find_element_by_class_name("Ypffh").click()
-                comment_input_box = driver.find_element_by_class_name("Ypffh")
-                time.sleep(random.randint(2, 5))
-                self.type_like_a_person(
-                    random.choice(comments), comment_input_box)
-                time.sleep(random.randint(3, 5))
-                driver.find_element_by_xpath(
-                    "//button[contains(text(), 'Publicar')]"
-                ).click()
-                time.sleep(random.randint(3, 5))
-            except Exception as e:
-                print(e)
-                time.sleep(5)
+        try:
+            # Aguarda o campo de comentário aparecer no DOM
+            comentario_campo = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.XPATH, "//textarea[@aria-label='Adicione um comentário...']"))
+            )
 
+            # Clica no campo de comentário
+            comentario_campo.click()
 
-# Entre com o usuário e senha aqui
-jhonatanBot = InstagramBot("seuUsuario", "suaSenha")
-jhonatanBot.login()
+            # Recarrega o elemento caso ele fique "stale"
+            comentario_campo = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.XPATH, "//textarea[@aria-label='Adicione um comentário...']"))
+            )
+
+            # Envia o comentário
+            comentario_campo.send_keys("Comentário automático de teste!")
+            comentario_campo.send_keys(Keys.RETURN)
+
+            print("Comentário feito com sucesso!")
+        except Exception as e:
+          print(f"Erro ao comentar: {e}")
+
+# Agora instanciamos o bot aqui, fora da classe
+bot = InstagramBot("diego.kr1994@gmail.com", "Cleiton_0708")
+bot.login()
+
